@@ -13,6 +13,7 @@ import android.webkit.WebView;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -277,4 +278,58 @@ public class Utils {
         }
         return false;
     }
+
+    // 判断是否具有ROOT权限,小米不行
+    public static boolean is_root() {
+        boolean res = false;
+        try {
+            if ((!new File("/system/bin/su").exists()) &&
+                    (!new File("/system/xbin/su").exists())) {
+                res = false;
+            } else {
+                res = true;
+            }
+        } catch (Exception e) {
+
+        }
+        return res;
+    }
+
+    /**
+     * 判断手机是否root，不弹出root请求框
+     */
+    public static boolean isRoot() {
+        String binPath = "/system/bin/su";
+        String xBinPath = "/system/xbin/su";
+        if (new File(binPath).exists() && isExecutable(binPath))
+            return true;
+        if (new File(xBinPath).exists() && isExecutable(xBinPath))
+            return true;
+        return false;
+    }
+
+    private static boolean isExecutable(String filePath) {
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec("ls -l " + filePath);
+            // 获取返回内容
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    p.getInputStream()));
+            String str = in.readLine();
+            Log.i(TAG, str);
+            if (str != null && str.length() >= 4) {
+                char flag = str.charAt(3);
+                if (flag == 's' || flag == 'x')
+                    return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (p != null) {
+                p.destroy();
+            }
+        }
+        return false;
+    }
+
 }

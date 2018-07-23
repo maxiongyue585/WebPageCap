@@ -1,22 +1,22 @@
 package com.xm.demo.refreshurl.utils;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.content.Intent;
+import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
-import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static com.xm.demo.refreshurl.Activity.WebViewActivity.REQUEST_MEDIA_PROJECTION;
 
 
 public class KgWebChromeClient extends WebChromeClient {
@@ -93,7 +93,7 @@ public class KgWebChromeClient extends WebChromeClient {
                 try {
                     Thread.sleep(10000);
                     File filePath = new File(Environment.getExternalStorageDirectory().getPath() + File.separator + "wb_capture" + File.separator + Utils.getCurrentDateTime());
-                    if(!filePath.exists()){
+                    if (!filePath.exists()) {
 
                         filePath.mkdirs();
                     }
@@ -108,18 +108,31 @@ public class KgWebChromeClient extends WebChromeClient {
 //                    //压缩bitmap到输出流中
 //                    bitmap.compress(Bitmap.CompressFormat.JPEG, 70, fos);
 //                    fos.close();
+                    if (Utils.isRoot()) {
+                        Utils.exec("screencap -p " + new File(filePath, String.format("%s_.png", time_fmt.format(new Date()))), true);
+                        Log.d(TAG, "getSnapshot: 截屏成功");
+                    } else {
+                        if (Build.VERSION.SDK_INT >= 21) {
+                            activity.startActivityForResult(createScreenCaptureIntent(), REQUEST_MEDIA_PROJECTION);
+                        } else {
+                            Log.e(TAG, "run: 版本过低,无法截屏");
+                        }
+                    }
 
-                    Utils.exec("screencap -p "+ new File(filePath, String.format("%s_.png", time_fmt.format(new Date()))), true);
-
-                    Log.d(TAG, "getSnapshot: 截屏成功");
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 } finally {
 
                 }
-
-                activity.finish();
+                if (Utils.isRoot()) {
+                    activity.finish();
+                }
             }
         }.start();
+    }
+
+    private Intent createScreenCaptureIntent() {
+        //这里用media_projection代替Context.MEDIA_PROJECTION_SERVICE 是防止低于21 api编译不过
+        return ((MediaProjectionManager) activity.getSystemService("media_projection")).createScreenCaptureIntent();
     }
 }
